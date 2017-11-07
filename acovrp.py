@@ -8,7 +8,7 @@ class graph():
 		self.n = randint(2,10) # number of nodes
 		self.a = randint(1,(self.n*(self.n-1)/2)); # number of edges
 		self.matrix = np.empty((self.n, self.n))
-		rand = 8
+		rand = 2
 		for i in xrange(0, self.n):
 			for j in xrange(0, self.n):
 				if i != j:
