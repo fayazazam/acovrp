@@ -19,7 +19,7 @@ class Graph(object):
 		self.V = set()
 		self.E = set()
 
-def randomGraph(n=20, p=0.3):
+def randomGraph(n=20, p=0.25):
 	G = Graph()
 
 	for i in xrange(0,n):
@@ -56,9 +56,8 @@ def drawGraph(G):
 	plt.show()
 
 if __name__ == '__main__':
-	# visualize = True
-	# G = randomGraph()
+	visualize = True
+	G = randomGraph()
 	
-	# if visualize:
-	# 	drawGraph(G)
-	print TSPLIBParser('instances/A/A-n32-k5.vrp').parse()
+	if visualize:
+		drawGraph(G)

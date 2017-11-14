@@ -18,7 +18,7 @@ class TSPLIBParser(object):
 		self.filename = filename
 
 	def parse(self):
-		re_spec = r"(\w+)\s?\:\s?(.+)\n"
+		re_spec = r"(\w+)\s*\:\s*(.+)\n"
 
 		sections = dict.fromkeys(['node_coords', 'depots', 'demands', 'edge_data', 'fixed_edges', 'display_data', 'tours', 'edge_weights',], False)
 
@@ -29,8 +29,9 @@ class TSPLIBParser(object):
 					if m.group(1) == 'NAME':
 						self.data['name'] = m.group(2)
 					elif m.group(1) == 'TYPE':
-						assert m.group(2) in TSPLIBParser.TYPES
-						self.data['type'] = m.group(2)
+						TYPE = re.match(r"\s*(\w+)\s*", m.group(2))
+						assert TYPE.group(1) in TSPLIBParser.TYPES
+						self.data['type'] = TYPE.group(1)
 					elif m.group(1) == 'COMMENT':
 						self.data['comment'] = m.group(2)
 					elif m.group(1) == 'DIMENSION':
@@ -38,8 +39,9 @@ class TSPLIBParser(object):
 					elif m.group(1) == 'CAPACITY':
 						self.data['capacity'] = int(m.group(2))
 					elif m.group(1) == 'EDGE_WEIGHT_TYPE':
-						assert m.group(2) in TSPLIBParser.EDGE_WEIGHT_TYPES
-						self.data['edge_weight_type'] = m.group(2)
+						EDGE_WEIGHT_TYPE = re.match(r"\s*(\w+)\s*", m.group(2))
+						assert EDGE_WEIGHT_TYPE.group(1) in TSPLIBParser.EDGE_WEIGHT_TYPES
+						self.data['edge_weight_types'] = EDGE_WEIGHT_TYPE.group(1)
 					elif m.group(1) == 'EDGE_WEIGHT_FORMAT':
 						assert m.group(2) in TSPLIBParser.EDGE_WEIGHT_FORMATS
 						self.data['edge_weight_format'] = m.group(2)
