@@ -21,14 +21,13 @@ class TSPLIBParser(object):
 		re_spec = r"(\w+)\s*\:\s*(.+)\n"
 		re_data = r"\s*([A-Z_]+)\s*\n"
 		sections = dict.fromkeys(['node_coords', 'depots', 'demands', 'edge_data', 'fixed_edges', 'display_data', 'tours', 'edge_weights',], False)
-		counter = 1
+		counter = 0
 
 		with open(self.filename, 'r') as file:
 			for line in file:
 				if any(value for key, value in sections.iteritems()):
 					if sections['node_coords']:
 						try:
-							assert counter < self.data['dimension']
 							counter += 1
 							m = re.match(r"\s*(\d+)\s+(\-?\d+(\.\d+)?)\s+(\-?\d+(\.\d+)?)(\s+(\-?\d+(\.\d+)?))?\s*\n", line)
 							if '2D' in self.data['edge_weight_type']:
@@ -45,8 +44,9 @@ class TSPLIBParser(object):
 							else:
 								print line
 								raise ValueError('Invalid value for key \'edge_weight_type\'')
+							assert counter < self.data['dimension']
 						except AssertionError:
-							counter = 1
+							counter = 0
 							sections['node_coords'] = False
 						except:
 							print line
@@ -63,17 +63,17 @@ class TSPLIBParser(object):
 							raise
 					elif sections['demands']:
 						try:
-							assert counter < self.data['dimension']
 							counter += 1
 							m = re.match(r"\s*(\d+)\s+(\d+)\s*\n", line)
 							self.data['demand_section'].append(
 								{'id': int(m.group(1)),
 								'demand': int(m.group(2))})
+							assert counter < self.data['dimension']
 						except AssertionError:
-							print line
-							counter = 1
+							counter = 0
 							sections['demands'] = False
 						except:
+							print line
 							raise
 					elif sections['edge_data']:
 						print 'edge_data'
