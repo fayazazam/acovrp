@@ -80,29 +80,32 @@ class TSPLIBParser(object):
 							if self.data['edge_data_format'] == 'EDGE_LIST':
 								m = re.match(r'\s*(\d+)\s+(\d+)\s*\n', line)
 								self.data['edge_data_section'].append(
-									int(m.group(1)), 
-									int(m.group(2)))
+									(int(m.group(1)), int(m.group(2))))
 							elif self.data['edge_data_format'] == 'ADJ_LIST':
 								assert re.match(r'\s*(\d+)\s+(\d+\s+)+-1\s*\n', line)
-								m = re.findall(r'\d+', line)
-								adj = []
-								for i in xrange(1,len(m)-1):
-									adj.append(int(m[i]))
+								m = map(int, re.findall(r'\d+', line))								
 								self.data['edge_data_section'].append(
-									{'id': int(m[0]),
-									'adjacent': adj})
+									{'id': m[0], 'adjacent': m[1:len(m)-1]})
 							else:
 								print line
 								raise ValueError('Invalid value for key \'edge_data_format\'')
-						except AssertionError, AttributeError:
+						except (AssertionError, AttributeError):
 							assert '-1' in line
 							sections['edge_data'] = False
 						except:
 							print line
 							raise
 					elif sections['fixed_edges']:
-						print 'fixed_edges'
-						sections['fixed_edges'] = False
+						try:
+							m = re.match(r'\s*(\d+)\s+(\d+)\s*\n', line)
+							self.data['fixed_edges_section'].append(
+								(int(m.group(1)), int(m.group(2))))
+						except AttributeError:
+							assert '-1' in line
+							sections['fixed_edges'] = False
+						except:
+							print line
+							raise
 					elif sections['display_data']:
 						print 'display_data'
 						sections['display_data'] = False
@@ -160,6 +163,7 @@ class TSPLIBParser(object):
 							self.data['edge_data_section'] = []
 							sections['edge_data'] = True
 						elif m.group(1) == 'FIXED_EDGES_SECTION':
+							self.data['fixed_edges_section'] = []
 							sections['fixed_edges'] = True
 						elif m.group(1) == 'DISPLAY_DATA_SECTION':
 							sections['display_data'] = True
