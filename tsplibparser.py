@@ -18,8 +18,8 @@ class TSPLIBParser(object):
 		self.filename = filename
 
 	def parse(self):
-		re_spec = r"(\w+)\s*\:\s*(.+)\n"
-		re_data = r"\s*([A-Z_]+)\s*\n"
+		re_spec = r'(\w+)\s*\:\s*(.+)\n'
+		re_data = r'\s*([A-Z_]+)\s*\n'
 		sections = dict.fromkeys(['node_coords', 'depots', 'demands', 'edge_data', 'fixed_edges', 'display_data', 'tours', 'edge_weights',], False)
 		counter = 0
 
@@ -29,7 +29,7 @@ class TSPLIBParser(object):
 					if sections['node_coords']:
 						try:
 							counter += 1
-							m = re.match(r"\s*(\d+)\s+(\-?\d+(\.\d+)?)\s+(\-?\d+(\.\d+)?)(\s+(\-?\d+(\.\d+)?))?\s*\n", line)
+							m = re.match(r'\s*(\d+)\s+(\-?\d+(\.\d+)?)\s+(\-?\d+(\.\d+)?)(\s+(\-?\d+(\.\d+)?))?\s*\n', line)
 							if '2D' in self.data['edge_weight_type']:
 								self.data['node_coord_section'].append(
 									{'id': int(m.group(1)), 
@@ -53,7 +53,7 @@ class TSPLIBParser(object):
 							raise
 					elif sections['depots']:
 						try:
-							m = re.match(r"\s*(\d+)\s*\n", line)
+							m = re.match(r'\s*(\d+)\s*\n', line)
 							self.data['depot_section'].append(int(m.group(1)))
 						except AttributeError:
 							assert '-1' in line
@@ -64,7 +64,7 @@ class TSPLIBParser(object):
 					elif sections['demands']:
 						try:
 							counter += 1
-							m = re.match(r"\s*(\d+)\s+(\d+)\s*\n", line)
+							m = re.match(r'\s*(\d+)\s+(\d+)\s*\n', line)
 							self.data['demand_section'].append(
 								{'id': int(m.group(1)),
 								'demand': int(m.group(2))})
@@ -76,8 +76,30 @@ class TSPLIBParser(object):
 							print line
 							raise
 					elif sections['edge_data']:
-						print 'edge_data'
-						sections['edge_data'] = False
+						try:
+							if self.data['edge_data_format'] == 'EDGE_LIST':
+								m = re.match(r'\s*(\d+)\s+(\d+)\s*\n', line)
+								self.data['edge_data_section'].append(
+									int(m.group(1)), 
+									int(m.group(2)))
+							elif self.data['edge_data_format'] == 'ADJ_LIST':
+								assert re.match(r'\s*(\d+)\s+(\d+\s+)+-1\s*\n', line)
+								m = re.findall(r'\d+', line)
+								adj = []
+								for i in xrange(1,len(m)-1):
+									adj.append(int(m[i]))
+								self.data['edge_data_section'].append(
+									{'id': int(m[0]),
+									'adjacent': adj})
+							else:
+								print line
+								raise ValueError('Invalid value for key \'edge_data_format\'')
+						except AssertionError, AttributeError:
+							assert '-1' in line
+							sections['edge_data'] = False
+						except:
+							print line
+							raise
 					elif sections['fixed_edges']:
 						print 'fixed_edges'
 						sections['fixed_edges'] = False
@@ -96,7 +118,7 @@ class TSPLIBParser(object):
 						if m.group(1) == 'NAME':
 							self.data['name'] = m.group(2)
 						elif m.group(1) == 'TYPE':
-							TYPE = re.match(r"\s*(\w+)\s*", m.group(2))
+							TYPE = re.match(r'\s*(\w+)\s*', m.group(2))
 							assert TYPE.group(1) in TSPLIBParser.TYPES
 							self.data['type'] = TYPE.group(1)
 						elif m.group(1) == 'COMMENT':
@@ -106,7 +128,7 @@ class TSPLIBParser(object):
 						elif m.group(1) == 'CAPACITY':
 							self.data['capacity'] = int(m.group(2))
 						elif m.group(1) == 'EDGE_WEIGHT_TYPE':
-							EDGE_WEIGHT_TYPE = re.match(r"\s*(\w+)\s*", m.group(2))
+							EDGE_WEIGHT_TYPE = re.match(r'\s*(\w+)\s*', m.group(2))
 							assert EDGE_WEIGHT_TYPE.group(1) in TSPLIBParser.EDGE_WEIGHT_TYPES
 							self.data['edge_weight_type'] = EDGE_WEIGHT_TYPE.group(1)
 						elif m.group(1) == 'EDGE_WEIGHT_FORMAT':
@@ -135,6 +157,7 @@ class TSPLIBParser(object):
 							self.data['demand_section'] = []
 							sections['demands'] = True
 						elif m.group(1) == 'EDGE_DATA_SECTION':
+							self.data['edge_data_section'] = []
 							sections['edge_data'] = True
 						elif m.group(1) == 'FIXED_EDGES_SECTION':
 							sections['fixed_edges'] = True
