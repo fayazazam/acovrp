@@ -83,7 +83,7 @@ class TSPLIBParser(object):
 									(int(m.group(1)), int(m.group(2))))
 							elif self.data['edge_data_format'] == 'ADJ_LIST':
 								assert re.match(r'\s*(\d+)\s+(\d+\s+)+-1\s*\n', line)
-								m = map(int, re.findall(r'\d+', line))								
+								m = map(int, re.findall(r'\d+', line))
 								self.data['edge_data_section'].append(
 									{'id': m[0], 'adjacent': m[1:len(m)-1]})
 							else:
@@ -122,8 +122,17 @@ class TSPLIBParser(object):
 							print line
 							raise
 					elif sections['tours']:
-						print 'tours'
-						sections['tours'] = False
+						try:
+							assert re.match(r'\s*(\d+\s+)+', line)
+							m = map(int, re.findall(r'\d+', line))
+							for node_id in m:
+								self.data['tour_section'].append(node_id)
+						except AssertionError:
+							assert '-1' in line
+							sections['tours'] = False
+						except:
+							print line
+							raise
 					elif sections['edge_weights']:
 						print 'edge_weights'
 						sections['edge_weights'] = False
@@ -181,6 +190,7 @@ class TSPLIBParser(object):
 							self.data['display_data_section'] = []
 							sections['display_data'] = True
 						elif m.group(1) == 'TOUR_SECTION':
+							self.data['tour_section'] = []
 							sections['tours'] = True
 						elif m.group(1) == 'EDGE_WEIGHT_SECTION':
 							sections['edge_weights'] = True
