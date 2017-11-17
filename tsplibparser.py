@@ -18,7 +18,7 @@ class TSPLIBParser(object):
 		self.filename = filename
 
 	def parse(self):
-		re_spec = r'(\w+)\s*\:\s*(.+)\n'
+		re_spec = r'(\w+)\s*\:\s*([A-Z0-9\_]+)\s*\n'
 		re_data = r'\s*([A-Z_]+)\s*\n'
 		sections = dict.fromkeys(['node_coords', 'depots', 'demands', 'edge_data', 'fixed_edges', 'display_data', 'tours', 'edge_weights',], False)
 		counter = 0
@@ -107,8 +107,20 @@ class TSPLIBParser(object):
 							print line
 							raise
 					elif sections['display_data']:
-						print 'display_data'
-						sections['display_data'] = False
+						try:
+							counter += 1
+							m = re.match(r'\s*(\d+)\s+(\-?\d+(\.\d+)?)\s*(\-?\d+(\.\d+)?)\s*\n', line)
+							self.data['display_data_section'].append(
+								{'id': int(m.group(1)), 
+								'x': float(m.group(2)), 
+								'y': float(m.group(4))})
+							assert counter < self.data['dimension']
+						except AssertionError:
+							counter = 0
+							sections['display_data'] = False
+						except:
+							print line
+							raise
 					elif sections['tours']:
 						print 'tours'
 						sections['tours'] = False
@@ -166,6 +178,7 @@ class TSPLIBParser(object):
 							self.data['fixed_edges_section'] = []
 							sections['fixed_edges'] = True
 						elif m.group(1) == 'DISPLAY_DATA_SECTION':
+							self.data['display_data_section'] = []
 							sections['display_data'] = True
 						elif m.group(1) == 'TOUR_SECTION':
 							sections['tours'] = True
