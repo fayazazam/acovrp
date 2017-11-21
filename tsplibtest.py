@@ -2,4 +2,4 @@
 
 from tsplibparser import TSPLIBParser
 
-print TSPLIBParser('instances/test/test.vrp').parse()
+print TSPLIBParser('instances/A/A-n32-k5.vrp').parse()

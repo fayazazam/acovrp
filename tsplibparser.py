@@ -1,8 +1,15 @@
 #!python2
 
+import math
 import re
 
 class TSPLIBParser(object):
+
+	@staticmethod
+	def d_euc2d(i, j):
+		xd = i[0] - j[0]
+		yd = i[1] - j[1]
+		return int(round(math.sqrt(xd*xd + yd*yd)))
 
 	KEYS_SPEC = ['NAME', 'TYPE', 'COMMENT', 'DIMENSION', 'CAPACITY', 'EDGE_WEIGHT_TYPE', 'EDGE_WEIGHT_FORMAT', 'EDGE_DATA_FORMAT', 'NODE_COORD_TYPE', 'DISPLAY_DATA_TYPE', 'EOF']
 	KEYS_DATA = ['NODE_COORD_SECTION', 'DEPOT_SECTION', 'DEMAND_SECTION', 'EDGE_DATA_SECTION', 'FIXED_EDGES_SECTION', 'DISPLAY_DATA_SECTION', 'TOUR_SECTION', 'EDGE_WEIGHT_SECTION']

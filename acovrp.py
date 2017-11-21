@@ -7,9 +7,10 @@ import networkx as nx
 import numpy as np
 
 class Vertex(object):
-	def __init__(self, id):
+	def __init__(self, id, x, y):
 		self.id = id
-		#coordinates?
+		self.coords = (x,y)
+		self.demand = 0
 
 class Edge(object):
 	def __init__(self, i, j, weight):
@@ -18,30 +19,87 @@ class Edge(object):
 
 class Graph(object):
 	def __init__(self):
-		self.V = set()
-		self.E = set()
+		self.V = []
+		self.E = []
 
-	def __str__(self):
-		return V.id
+	def shortestPath(self, ant):
+		for index in np.argsort(G.adj[ant.pos-1]):
+			if index + 1 not in ant.route and ant.supply >= G.V[index].demand:
+				return index + 1
+			else:
+				continue
+		return depot
 
 class Ant(object):
 	capacity = 0
 
 	def __init__(self, id):
 		self.id = id
+		self.route = []
 
-def randomGraph(n=20, p=0.25):
+	def walk(self, G):
+		print "Walking"
+
+		self.pos = depot
+		self.route.append(self.pos)
+		self.supply = Ant.capacity
+
+		while len(set(self.route)) < dim:
+			self.pos = G.shortestPath(self)
+			if self.pos == depot:
+				self.supply = Ant.capacity
+			else:
+				self.supply -= G.V[self.pos-1].demand
+			self.route.append(self.pos)
+		self.route.append(depot)
+		print self.route
+
+		length = 0
+		for x in range(1,len(self.route)):
+			length += G.adj[self.route[x]-2][self.route[x]-1]
+		print length
+
+			
+
+
+# def randomGraph(n=20, p=0.25):
+# 	G = Graph()
+
+# 	for i in xrange(0,n):
+# 		G.V.add(Vertex(i))
+
+# 	for i in xrange(0,n):
+# 		for j in xrange(i,n):
+# 			#if np.random.rand() < p:
+# 			weight = np.random.rand()
+# 			G.E.add(Edge(i,j,weight))
+# 			G.E.add(Edge(j,i,weight))
+
+# 	return G
+
+def generateGraphFrom(data):
+	global depot, dim
+
 	G = Graph()
+	dim = data['dimension']
+	depot = data['depot_section'][0]
+	Ant.capacity = data['capacity']
 
-	for i in xrange(0,n):
-		G.V.add(Vertex(i))
+	for node in data['node_coord_section']:
+		G.V.append(Vertex(node['id'], node['x'], node['y']))
 
-	for i in xrange(0,n):
-		for j in xrange(i,n):
-			#if np.random.rand() < p:
-			weight = np.random.rand()
-			G.E.add(Edge(i,j,weight))
-			G.E.add(Edge(j,i,weight))
+	for node in data['demand_section']:
+		G.V[node['id']-1].demand = node['demand']
+
+	G.adj = np.zeros((dim,dim))
+
+	for i in xrange(0,dim):
+		for j in xrange(i,dim):
+			if i == j:
+				G.adj[i][j] = float('inf')
+			else:
+				G.adj[i][j] = TSPLIBParser.d_euc2d(G.V[i].coords, G.V[j].coords)
+				G.adj[j][i] = TSPLIBParser.d_euc2d(G.V[i].coords, G.V[j].coords)
 
 	return G
 
@@ -67,7 +125,7 @@ def drawGraph(G):
 	plt.axis('off')
 	plt.show()
 
-def walkingAnt(G, depot, i):
+def walkingAnt(G, i):
 	print "Walking"
 
 	currentNode = depot
@@ -77,11 +135,10 @@ def walkingAnt(G, depot, i):
 
 	nodesSeen.append(depot)
 
-
 	while amountDelivered < Ant.capacity:
 		randomNode = randint(0, len(G.V))
 		if (randomNode not in nodesSeen and randomNode != currentNode):
-			amountDelivered = 5 #value of edge between node i and j
+			amountDelivered += 5 #value of edge between node i and j
 			route.append(randomNode)
 			nodesSeen.append(randomNode) 
 			currentNode = randomNode
@@ -89,6 +146,7 @@ def walkingAnt(G, depot, i):
 			break	
 	print amountDelivered
 	print route
+	print nodesSeen
 
 
 
@@ -96,36 +154,21 @@ if __name__ == '__main__':
 	beta = 2.3
 	alpha = 0.1
 	numberOfAnts = 2
-	Ant.capacity = 100
 
 	visualize = False
-	G = randomGraph()
+	data = TSPLIBParser('instances/A/A-n32-k5.vrp').parse()
+	G = generateGraphFrom(data)
 	
 	if visualize:
 		drawGraph(G)
 
-	#Set one of the nodes in the set as the depot
-	depot = randint(0, len(G.V))
-	print depot
-
-	#Create a list of pre-set length containing the ants
+	# Create a list of pre-set length containing the ants
 	ants = []
 	for i in xrange(0, numberOfAnts):
 		ants.append(Ant(i))
 
-	for i in range(0, len(ants)):
-		walkingAnt(G, depot, ants[i])
+	for ant in ants:
+		ant.walk(G)
+		# walkingAnt(G, ant)
 		print "----next----\n"
-
-	
-
-
-
-
-
-
-
-
-
-
-
+		
