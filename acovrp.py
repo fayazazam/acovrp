@@ -30,36 +30,47 @@ class Graph(object):
 		self.E = []
 		self.adj = []
 
-	def importance(self, i, j):
-		return np.power(self.adj[i][j].pher*(1./self.adj[i][j].dist), BETA)
+	def updatePheromone(self, route, glob = False):
+		for x in xrange(0,len(route.customers)-1):
+			G.adj[route.customers[x]-1][route.customers[x+1]-1].pher *= (1. - ALPHA)
+			if glob:
+				G.adj[route.customers[x]-1][route.customers[x+1]-1].pher += ALPHA * (1./route.cost(self))
+			else:
+				G.adj[route.customers[x]-1][route.customers[x+1]-1].pher += ALPHA * TAU0
 
-	def eq1(self, hist):
+	def importance(self, i, j):
+		try:
+			return np.power(self.adj[i][j].pher*(1./self.adj[i][j].dist), BETA)
+		except ZeroDivisionError:
+			return float('inf')
+
+	def eq1(self, route):
 		global dim
 		customer = -1
 		maxval = 0
 
 		for x in xrange(0,dim): # check every customer
-			if x + 1 not in hist: # customer has not been visited yet
-				tmp = self.importance(hist[-1]-1, x)
+			if x + 1 not in route.customers: # customer has not been visited yet
+				tmp = self.importance(route.customers[-1]-1, x)
 				if tmp > maxval:
 					customer = x + 1
 					maxval = tmp
 		return customer
 
-	def eq2(self, hist):
+	def eq2(self, route):
 		global dim
 		dart = np.random.rand()
 		total = 0 # contains the sum of the importance of all unvisited customers
 
 		for x in xrange(0,dim): # check every customer
-			if x + 1 not in hist: # customer has not been visited yet
-				total += self.importance(hist[-1]-1, x)
+			if x + 1 not in route.customers: # customer has not been visited yet
+				total += self.importance(route.customers[-1]-1, x)
 
 		sigma = 0
 		for x in xrange(0,dim): # check every customer
-			if x + 1 not in hist: # customer has not been visited yet
-				if sigma + self.importance(hist[-1]-1, x)/total < dart:
-					sigma += self.importance(hist[-1]-1, x)/total
+			if x + 1 not in route.customers: # customer has not been visited yet
+				if sigma + self.importance(route.customers[-1]-1, x)/total < dart:
+					sigma += self.importance(route.customers[-1]-1, x)/total
 					continue
 				return x + 1
 
@@ -68,7 +79,7 @@ class Ant(object):
 
 	def __init__(self, id):
 		self.id = id
-		self.route = []
+		self.route = Route()
 
 	def selectPath(self, G):
 		global depot
@@ -84,27 +95,35 @@ class Ant(object):
 
 		return selected
 
-	def routeCost(self):
-		c = 0
-		for x in range(0,len(self.route)-1):
-			c += G.adj[self.route[x]-1][self.route[x+1]-1].dist
-		return c
-
 	def walk(self, G):
-		self.route.append(depot) # append to history/route
+		self.route.customers.append(depot) # append to history/route
 		self.supply = Ant.capacity # set supply to max capacity
 
-		while len(set(self.route)) < dim: # visit all customers
-			self.route.append(self.selectPath(G)) # append new customer to history/route
-			if self.route[-1] == depot: # new position is the depot
+		while len(set(self.route.customers)) < dim: # visit all customers
+			self.route.customers.append(self.selectPath(G)) # append new customer to history/route
+			if self.route.customers[-1] == depot: # new position is the depot
 				self.supply = Ant.capacity # set supply to max capacity
 			else: # new position is a customer
-				self.supply -= G.V[self.route[-1]-1].demand # subtract customer demand
-		self.route.append(depot) # after visiting all customers, return to the depot
+				self.supply -= G.V[self.route.customers[-1]-1].demand # subtract customer demand
+		self.route.customers.append(depot) # after visiting all customers, return to the depot
 
-		print "Ant", self.id, "route:", self.route
-		print "Route cost:", self.routeCost()
+		G.updatePheromone(self.route)
 
+		# print "Ant", self.id, "route:", self.route
+		# print "Route cost:", self.route.cost(G)
+
+class Route(object):
+	def __init__(self):
+		self.customers = []
+
+	def __str__(self):
+		return str(self.customers)
+
+	def cost(self, G):
+		c = 0
+		for x in xrange(0,len(self.customers)-1):
+			c += G.adj[self.customers[x]-1][self.customers[x+1]-1].dist
+		return c
 
 def generateGraphFrom(data):
 	global depot, dim
@@ -166,11 +185,19 @@ if __name__ == '__main__':
 	if visualize:
 		drawGraph(G)
 
-	# Create a list of pre-set length containing the ants
-	ants = []
-	for i in xrange(0, M):
-		ants.append(Ant(i))
+	best = None # remember the best route
 
-	for ant in ants:
-		ant.walk(G)
+	for x in xrange(1,5000):
+		# Create a list of pre-set length containing the ants
+		ants = []
+		for i in xrange(0, M):
+			ants.append(Ant(i))
+
+		for ant in ants:
+			ant.walk(G)
+
+			if best == None or ant.route.cost(G) < best.cost(G):
+				best = ant.route
+				print "Minimal cost thus far:", best.cost(G)
 		
+		G.updatePheromone(best, True)
