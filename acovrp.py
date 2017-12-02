@@ -28,31 +28,40 @@ class Graph(object):
 	def __init__(self):
 		self.V = []
 		self.E = []
+		self.adj = []
 
-	def importance(p, G, i, j):
-		return np.power(p*(1./G[i][j]), BETA)
+	def importance(self, i, j):
+		return np.power(self.adj[i][j].pher*(1./self.adj[i][j].dist), BETA)
 
-	def eq1(G, history):
-		j = -1
+	def eq1(self, hist):
+		global dim
+		customer = -1
 		maxval = 0
-		for x in xrange(0,len(G.V)): # check every destination
-			if x + 1 not in history: # customer has not been visited yet
-				tmp = importance(G, history[-1]-1, x)
+
+		for x in xrange(0,dim): # check every customer
+			if x + 1 not in hist: # customer has not been visited yet
+				tmp = self.importance(hist[-1]-1, x)
 				if tmp > maxval:
-					j = x + 1
+					customer = x + 1
 					maxval = tmp
-		return j
+		return customer
 
-	def eq2(G, pos):
+	def eq2(self, hist):
+		global dim
+		dart = np.random.rand()
+		total = 0 # contains the sum of the importance of all unvisited customers
 
+		for x in xrange(0,dim): # check every customer
+			if x + 1 not in hist: # customer has not been visited yet
+				total += self.importance(hist[-1]-1, x)
 
-	def shortestPath(self, ant):
-		for index in np.argsort(G.adj[ant.pos-1]):
-			if index + 1 not in ant.route and ant.supply >= G.V[index].demand:
-				return index + 1
-			else:
-				continue
-		return depot
+		sigma = 0
+		for x in xrange(0,dim): # check every customer
+			if x + 1 not in hist: # customer has not been visited yet
+				if sigma + self.importance(hist[-1]-1, x)/total < dart:
+					sigma += self.importance(hist[-1]-1, x)/total
+					continue
+				return x + 1
 
 class Ant(object):
 	capacity = 0
@@ -61,22 +70,27 @@ class Ant(object):
 		self.id = id
 		self.route = []
 
-	def selectPath(G):
+	def selectPath(self, G):
+		global depot
 		selected = -1
-		if np.random.rand() <= Q0:
-			selected = eq1(G, self.route)
-		else:
-			selected = eq2(G, self.route)
 
-	def routeCost():
+		if np.random.rand() <= Q0:
+			selected = G.eq1(self.route)
+		else:
+			selected = G.eq2(self.route)
+
+		if G.V[selected-1].demand > self.supply:
+			return depot
+
+		return selected
+
+	def routeCost(self):
 		c = 0
 		for x in range(0,len(self.route)-1):
 			c += G.adj[self.route[x]-1][self.route[x+1]-1].dist
 		return c
 
 	def walk(self, G):
-		print "Walking"
-
 		self.route.append(depot) # append to history/route
 		self.supply = Ant.capacity # set supply to max capacity
 
@@ -88,8 +102,8 @@ class Ant(object):
 				self.supply -= G.V[self.route[-1]-1].demand # subtract customer demand
 		self.route.append(depot) # after visiting all customers, return to the depot
 
-		print self.route
-		print self.cost()		
+		print "Ant", self.id, "route:", self.route
+		print "Route cost:", self.routeCost()
 
 
 def generateGraphFrom(data):
@@ -106,7 +120,11 @@ def generateGraphFrom(data):
 	for node in data['demand_section']:
 		G.V[node['id']-1].demand = node['demand']
 
-	G.adj = np.zeros((dim,dim))
+	for i in xrange(0,dim):
+		tmp = []
+		for j in xrange(0,dim):
+			tmp.append(None)
+		G.adj.append(tmp)
 
 	for i in xrange(0,dim):
 		for j in xrange(i,dim):
@@ -155,6 +173,4 @@ if __name__ == '__main__':
 
 	for ant in ants:
 		ant.walk(G)
-		# walkingAnt(G, ant)
-		print "----next----\n"
 		
