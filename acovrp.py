@@ -1,5 +1,6 @@
 #!python2
 
+from __future__ import print_function
 from tsplibparser import TSPLIBParser
 import matplotlib.pyplot as plt
 from random import randint
@@ -198,6 +199,6 @@ if __name__ == '__main__':
 
 			if best == None or ant.route.cost(G) < best.cost(G):
 				best = ant.route
-				print "Minimal cost thus far:", best.cost(G)
 		
 		G.updatePheromone(best, True)
+		print("iteration "+ str(x) + ", minimal tour length " + str(best.cost(G)), end='\r')
