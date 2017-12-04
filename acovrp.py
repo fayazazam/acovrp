@@ -1,17 +1,8 @@
 #!python2
 
-from __future__ import print_function
 from tsplibparser import TSPLIBParser
-import matplotlib.pyplot as plt
-from random import randint
-import networkx as nx
+import argparse
 import numpy as np
-
-ALPHA = 0.1
-BETA = 2.3
-Q0 = 0.9
-M = 25
-TAU0 = 1./784
 
 class Vertex(object):
 	def __init__(self, id, x, y):
@@ -110,9 +101,6 @@ class Ant(object):
 
 		G.updatePheromone(self.route)
 
-		# print "Ant", self.id, "route:", self.route
-		# print "Route cost:", self.route.cost(G)
-
 class Route(object):
 	def __init__(self):
 		self.customers = []
@@ -156,36 +144,26 @@ def generateGraphFrom(data):
 
 	return G
 
-def drawGraph(G):
-	NG = nx.Graph()
-
-	# nodes
-	labels = {}
-
-	for v in G.V:
-		NG.add_node(v.id)
-		labels[v.id] = str(v.id)
-
-	# edges
-	for e in G.E:
-		NG.add_edge(*e.arc, weight=e.weight)
-
-	pos = nx.spring_layout(NG) # positions for all nodes
-	nx.draw_networkx_nodes(NG, pos)
-	nx.draw_networkx_edges(NG, pos)
-	nx.draw_networkx_labels(NG, pos, labels, font_color='w')
-
-	plt.axis('off')
-	plt.show()
-
 if __name__ == '__main__':
-	visualize = False
-	data = TSPLIBParser('instances/A/A-n32-k5.vrp').parse()
-	G = generateGraphFrom(data)
-	
-	if visualize:
-		drawGraph(G)
+	global ALPHA, BETA, Q0, M, TAU0
 
+	parser = argparse.ArgumentParser(description='Use ACO to find solutions for the VRP.')
+	parser.add_argument('file', nargs=1, type=str, help='a path to a file in TSPLIB format', metavar='INPUT')
+	parser.add_argument('best', nargs=1, type=float, help='a parameter for either the best found solution of the TSPLIB instance', metavar='BEST')
+	parser.add_argument('-a', nargs=1, default=[0.1], type=float, required=False, help='a parameter that controls the speed of pheromone evaporation', metavar='ALPHA')
+	parser.add_argument('-b', nargs=1, default=[2.3], type=float, required=False, help='a parameter establishing the importance of distance in comparison to pheromone quantity during customer selection', metavar='BETA')
+	parser.add_argument('-q', nargs=1, default=[0.9], type=float, required=False, help='a parameter controlling the probability for ants to choose an optimal path over a path determined by proportional selection', metavar='Q0')
+	parser.add_argument('-m', nargs=1, default=[25], type=int, required=False, help='a parameter specifying the total number of ants per iteration', metavar='M')
+	
+	args = parser.parse_args()
+	data = TSPLIBParser(args.file.pop()).parse()
+	ALPHA = args.a.pop()
+	BETA = args.b.pop()
+	Q0 = args.q.pop()
+	M = args.m.pop()
+	TAU0 = 1./args.best.pop()
+
+	G = generateGraphFrom(data)
 	best = None # remember the best route
 
 	for x in xrange(1,5000):
@@ -201,4 +179,5 @@ if __name__ == '__main__':
 				best = ant.route
 		
 		G.updatePheromone(best, True)
-		print("iteration "+ str(x) + ", minimal tour length " + str(best.cost(G)), end='\r')
+
+	print str(best.cost(G))
