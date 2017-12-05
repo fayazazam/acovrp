@@ -2,6 +2,8 @@
 
 from tsplibparser import TSPLIBParser
 import argparse
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 
 class Vertex(object):
@@ -32,7 +34,7 @@ class Graph(object):
 
 	def importance(self, i, j):
 		try:
-			return np.power(self.adj[i][j].pher*(1./self.adj[i][j].dist), BETA)
+			return self.adj[i][j].pher*np.power((1./self.adj[i][j].dist), BETA)
 		except ZeroDivisionError:
 			return float('inf')
 
@@ -177,7 +179,6 @@ if __name__ == '__main__':
 
 			if best == None or ant.route.cost(G) < best.cost(G):
 				best = ant.route
+				print str(best.cost(G))
 		
 		G.updatePheromone(best, True)
-
-	print str(best.cost(G))

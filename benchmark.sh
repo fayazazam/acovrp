@@ -1,8 +1,8 @@
 #!/bin/bash
 
-for a in 0.05 0.1 0.2
+for a in 0.15 0.25 0.3
 do
-	for b in 0.8 1.6 2.3 3.1
+	for b in 1.2 2.0 2.7 3.6
 	do
 		for q in 0.3 0.5 0.7 0.9
 		do
