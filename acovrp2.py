@@ -5,6 +5,9 @@ from tsplibparser import TSPLIBParser
 import argparse
 import numpy as np
 
+from multiprocessing import Pool
+from multiprocessing.sharedctypes import RawArray
+
 class Vertex(object):
 	def __init__(self, id, x, y):
 		self.id = id
@@ -167,6 +170,8 @@ if __name__ == '__main__':
 	G = generateGraphFrom(data)
 	best = None # remember the best route
 
+	n_cores = 4
+
 	x = 1
 	while True:
 		# Create a list of pre-set length containing the ants
@@ -174,12 +179,22 @@ if __name__ == '__main__':
 		for i in xrange(0, M):
 			ants.append(Ant(i))
 
-		for ant in ants:
-			ant.walk(G)
+		numAnts = M
+		numAnts_chunk = numAnts / n_cores
+		chunks = [(numAnts_chunk * n, numAnts_chunk * (n+1), M) for n in range(n_cores) ]
 
-			if best == None or ant.route.cost(G) < best.cost(G):
-				best = ant.route
-		
+	    # Add the remainder to the last chunk in the list.
+		chunks[-1] = (chunks[-1][0], chunks[-1][1] + (numAnts % n_cores), chunks[-1][2])
+
+		p = Pool(n_cores)
+		for i in chunks:
+			for ant in ants:
+				ant.walk(G)
+				if best == None or ant.route.cost(G) < best.cost(G):
+					best = ant.route
+		p.close()
+		p.join()
+
 		G.updatePheromone(best, True)
 		print("iteration "+ str(x) + ", minimal tour length " + str(best.cost(G)), end='\r')
 		x += 1
