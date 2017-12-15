@@ -170,7 +170,7 @@ if __name__ == '__main__':
 	G = generateGraphFrom(data)
 	best = None # remember the best route
 
-	n_cores = 4
+	n_cores = 8
 
 	x = 1
 	while True:
@@ -188,7 +188,7 @@ if __name__ == '__main__':
 
 		p = Pool(n_cores)
 		for i in chunks:
-			for ant in ants:
+			for ant in ants[i[0]:i[1]]:
 				ant.walk(G)
 				if best == None or ant.route.cost(G) < best.cost(G):
 					best = ant.route
