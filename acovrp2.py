@@ -4,9 +4,7 @@ from __future__ import print_function
 from tsplibparser import TSPLIBParser
 import argparse
 import numpy as np
-
 from multiprocessing import Pool
-from multiprocessing.sharedctypes import RawArray
 
 class Vertex(object):
 	def __init__(self, id, x, y):
@@ -148,8 +146,26 @@ def generateGraphFrom(data):
 
 	return G
 
+def walk(ant):
+	global G, best
+
+	ant.route.customers.append(depot) # append to history/route
+	ant.supply = Ant.capacity # set supply to max capacity
+
+	while len(set(ant.route.customers)) < dim: # visit all customers
+		ant.route.customers.append(ant.selectPath(G)) # append new customer to history/route
+		if ant.route.customers[-1] == depot: # new position is the depot
+			ant.supply = Ant.capacity # set supply to max capacity
+		else: # new position is a customer
+			ant.supply -= G.V[ant.route.customers[-1]-1].demand # subtract customer demand
+	ant.route.customers.append(depot) # after visiting all customers, return to the depot
+
+	G.updatePheromone(ant.route)
+
+	print(ant.route.cost(G))
+
 if __name__ == '__main__':
-	global ALPHA, BETA, Q0, M, TAU0
+	global ALPHA, BETA, Q0, M, TAU0, G, best
 
 	parser = argparse.ArgumentParser(description='Use ACO to find solutions for the VRP.')
 	parser.add_argument('file', nargs=1, type=str, help='a path to a file in TSPLIB format', metavar='INPUT')
@@ -170,28 +186,15 @@ if __name__ == '__main__':
 	G = generateGraphFrom(data)
 	best = None # remember the best route
 
-	n_cores = 4
+	# Create a list of pre-set length containing the ants
+	ants = []
+	for i in xrange(0, M):
+		ants.append(Ant(i))
 
 	x = 1
-	while True:
-		# Create a list of pre-set length containing the ants
-		ants = []
-		for i in xrange(0, M):
-			ants.append(Ant(i))
-
-		numAnts = M
-		numAnts_chunk = numAnts / n_cores
-		chunks = [(numAnts_chunk * n, numAnts_chunk * (n+1), M) for n in range(n_cores) ]
-
-	    # Add the remainder to the last chunk in the list.
-		chunks[-1] = (chunks[-1][0], chunks[-1][1] + (numAnts % n_cores), chunks[-1][2])
-
-		p = Pool(n_cores)
-		for i in chunks:
-			for ant in ants:
-				ant.walk(G)
-				if best == None or ant.route.cost(G) < best.cost(G):
-					best = ant.route
+	while x < 100:
+		p = Pool()
+		p.imap_unordered(walk, ants)
 		p.close()
 		p.join()
 
