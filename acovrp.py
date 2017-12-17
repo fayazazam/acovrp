@@ -174,7 +174,7 @@ if __name__ == '__main__':
 	best = None # remember the best route
 
 	x = 1
-	while x < 100:
+	while x < 5000:
 		# Create a list of pre-set length containing the ants
 		ants = []
 		for i in xrange(0, M):
