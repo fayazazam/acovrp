@@ -4,7 +4,8 @@ from __future__ import print_function
 from tsplibparser import TSPLIBParser
 import argparse
 import numpy as np
-from multiprocessing import Pool
+import sys
+from multiprocessing import Pool, Value
 
 class Vertex(object):
 	def __init__(self, id, x, y):
@@ -146,6 +147,10 @@ def generateGraphFrom(data):
 
 	return G
 
+def init(args):
+	global best
+	best = args
+
 def walk(ant):
 	global G, best
 
@@ -162,10 +167,13 @@ def walk(ant):
 
 	G.updatePheromone(ant.route)
 
-	print(ant.route.cost(G))
+	with best.get_lock():
+		cost = ant.route.cost(G)
+		if cost < best.value:
+			best.value = cost
 
 if __name__ == '__main__':
-	global ALPHA, BETA, Q0, M, TAU0, G, best
+	global ALPHA, BETA, Q0, M, TAU0
 
 	parser = argparse.ArgumentParser(description='Use ACO to find solutions for the VRP.')
 	parser.add_argument('file', nargs=1, type=str, help='a path to a file in TSPLIB format', metavar='INPUT')
@@ -184,9 +192,8 @@ if __name__ == '__main__':
 	TAU0 = 1./args.best.pop()
 
 	G = generateGraphFrom(data)
-	best = None # remember the best route
+	best = Value('i', sys.maxint) # remember the best route
 
-<<<<<<< HEAD
 	# Create a list of pre-set length containing the ants
 	ants = []
 	for i in xrange(0, M):
@@ -194,35 +201,12 @@ if __name__ == '__main__':
 
 	x = 1
 	while x < 100:
-		p = Pool()
+		p = Pool(initializer = init, initargs = (best, ))
 		p.imap_unordered(walk, ants)
-=======
-	n_cores = 8
-
-	x = 1
-	while True:
-		# Create a list of pre-set length containing the ants
-		ants = []
-		for i in xrange(0, M):
-			ants.append(Ant(i))
-
-		numAnts = M
-		numAnts_chunk = numAnts / n_cores
-		chunks = [(numAnts_chunk * n, numAnts_chunk * (n+1), M) for n in range(n_cores) ]
-
-	    # Add the remainder to the last chunk in the list.
-		chunks[-1] = (chunks[-1][0], chunks[-1][1] + (numAnts % n_cores), chunks[-1][2])
-
-		p = Pool(n_cores)
-		for i in chunks:
-			for ant in ants[i[0]:i[1]]:
-				ant.walk(G)
-				if best == None or ant.route.cost(G) < best.cost(G):
-					best = ant.route
->>>>>>> 1d1eb2a5b2749225741d9dd53c2404a19700015f
 		p.close()
 		p.join()
 
-		G.updatePheromone(best, True)
-		print("iteration "+ str(x) + ", minimal tour length " + str(best.cost(G)), end='\r')
+		with best.get_lock():
+			G.updatePheromone(best.value, True)
+			print("iteration "+ str(x) + ", minimal tour length " + str(best.value), end='\r')
 		x += 1

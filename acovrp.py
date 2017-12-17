@@ -1,9 +1,10 @@
 #!python2
 
-from __future__ import print_function
+# from __future__ import print_function
 from tsplibparser import TSPLIBParser
 import argparse
 import numpy as np
+import random
 
 class Vertex(object):
 	def __init__(self, id, x, y):
@@ -148,13 +149,18 @@ def generateGraphFrom(data):
 if __name__ == '__main__':
 	global ALPHA, BETA, Q0, M, TAU0
 
+	rand_alpha = random.uniform(0.01, 0.5)
+	rand_beta = random.uniform(0.01, 4.0)
+	rand_q0 = random.uniform(0.3, 0.99)
+	rand_m = np.random.randint(1,50)
+
 	parser = argparse.ArgumentParser(description='Use ACO to find solutions for the VRP.')
 	parser.add_argument('file', nargs=1, type=str, help='a path to a file in TSPLIB format', metavar='INPUT')
 	parser.add_argument('best', nargs=1, type=float, help='a parameter for either the best found solution of the TSPLIB instance', metavar='BEST')
-	parser.add_argument('-a', nargs=1, default=[0.1], type=float, required=False, help='a parameter that controls the speed of pheromone evaporation', metavar='ALPHA')
-	parser.add_argument('-b', nargs=1, default=[2.3], type=float, required=False, help='a parameter establishing the importance of distance in comparison to pheromone quantity during customer selection', metavar='BETA')
-	parser.add_argument('-q', nargs=1, default=[0.9], type=float, required=False, help='a parameter controlling the probability for ants to choose an optimal path over a path determined by proportional selection', metavar='Q0')
-	parser.add_argument('-m', nargs=1, default=[25], type=int, required=False, help='a parameter specifying the total number of ants per iteration', metavar='M')
+	parser.add_argument('-a', nargs=1, default=[rand_alpha], type=float, required=False, help='a parameter that controls the speed of pheromone evaporation', metavar='ALPHA')
+	parser.add_argument('-b', nargs=1, default=[rand_beta], type=float, required=False, help='a parameter establishing the importance of distance in comparison to pheromone quantity during customer selection', metavar='BETA')
+	parser.add_argument('-q', nargs=1, default=[rand_q0], type=float, required=False, help='a parameter controlling the probability for ants to choose an optimal path over a path determined by proportional selection', metavar='Q0')
+	parser.add_argument('-m', nargs=1, default=[rand_m], type=int, required=False, help='a parameter specifying the total number of ants per iteration', metavar='M')
 	
 	args = parser.parse_args()
 	data = TSPLIBParser(args.file.pop()).parse()
@@ -181,5 +187,7 @@ if __name__ == '__main__':
 				best = ant.route
 		
 		G.updatePheromone(best, True)
-		print("iteration "+ str(x) + ", minimal tour length " + str(best.cost(G)), end='\r')
+		# print("iteration "+ str(x) + ", minimal tour length " + str(best.cost(G)), end='\r')
 		x += 1
+
+	print str(rand_alpha) + "," + str(rand_beta) + "," + str(rand_q0) + "," + str(rand_m) + "," + str(best.cost(G))
