@@ -186,6 +186,7 @@ if __name__ == '__main__':
 	G = generateGraphFrom(data)
 	best = None # remember the best route
 
+<<<<<<< HEAD
 	# Create a list of pre-set length containing the ants
 	ants = []
 	for i in xrange(0, M):
@@ -195,6 +196,30 @@ if __name__ == '__main__':
 	while x < 100:
 		p = Pool()
 		p.imap_unordered(walk, ants)
+=======
+	n_cores = 8
+
+	x = 1
+	while True:
+		# Create a list of pre-set length containing the ants
+		ants = []
+		for i in xrange(0, M):
+			ants.append(Ant(i))
+
+		numAnts = M
+		numAnts_chunk = numAnts / n_cores
+		chunks = [(numAnts_chunk * n, numAnts_chunk * (n+1), M) for n in range(n_cores) ]
+
+	    # Add the remainder to the last chunk in the list.
+		chunks[-1] = (chunks[-1][0], chunks[-1][1] + (numAnts % n_cores), chunks[-1][2])
+
+		p = Pool(n_cores)
+		for i in chunks:
+			for ant in ants[i[0]:i[1]]:
+				ant.walk(G)
+				if best == None or ant.route.cost(G) < best.cost(G):
+					best = ant.route
+>>>>>>> 1d1eb2a5b2749225741d9dd53c2404a19700015f
 		p.close()
 		p.join()
 
